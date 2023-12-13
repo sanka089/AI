@@ -1,63 +1,66 @@
-def bfs(src,target):
-    queue = []
-    queue.append(src)
-    
-    exp = []
-    
-    while len(queue) > 0:
-        source = queue.pop(0)
-        exp.append(source)
-        
-        print(source)
-        
-        if source==target:
-            print("success")
-            return
-        
-        poss_moves_to_do = []
-        poss_moves_to_do = possible_moves(source,exp)
-        
-        for move in poss_moves_to_do:
-            
-            if move not in exp and move not in queue:
-                queue.append(move)
-def possible_moves(state,visited_states): 
-    b = state.index(0)
-    d = []
-    if b not in [0,1,2]: 
-        d.append('u')
-    if b not in [6,7,8]: 
-        d.append('d')
-    if b not in [0,3,6]: 
-        d.append('l')
-    if b not in [2,5,8]: 
-        d.append('r')
-    pos_moves_it_can = []
+import heapq
 
-    for i in d:
-        pos_moves_it_can.append(gen(state,i,b))
-        
-    return [move_it_can for move_it_can in pos_moves_it_can if move_it_can not in visited_states]
-def gen(state, m, b):
-    temp = state.copy()                              
-    
-    if m=='d':
-        temp[b+3],temp[b] = temp[b],temp[b+3]
-    
-    if m=='u':
-        temp[b-3],temp[b] = temp[b],temp[b-3]
-    
-    if m=='l':
-        temp[b-1],temp[b] = temp[b],temp[b-1]
-    
-    if m=='r':
-        temp[b+1],temp[b] = temp[b],temp[b+1]
-    return temp
+class Node:
+    def __init__(self, state, level, heuristic):
+        self.state = state
+        self.level = level
+        self.heuristic = heuristic
+    def __lt__(self, other):
+        return self.heuristic < other.heuristic
+def generate_child(node):
+    x, y = find_blank(node.state)
+    moves = [(x-1, y), (x+1, y), (x, y-1), (x, y+1)]
+    children = []
+    for move in moves:
+        child_state = move_blank(node.state, (x, y), move)
+        if child_state is not None:
+            h = calculate_heuristic(child_state)
+            child_node = Node(child_state, node.level + 1, h)
+            children.append(child_node)
 
-src = [1,2,3,0,4,5,6,7,8] 
-target = [1,2,3,4,5,0,6,7,8]  
+    return children
+def find_blank(state):
+    for i in range(3):
+        for j in range(3):
+            if state[i][j] == 0:
+                return i, j
+def move_blank(state, src, dest):
+    x1, y1 = src
+    x2, y2 = dest
 
-src= [2,0,3,1,8,4,7,6,5] 
-target=[1,2,3,8,0,4,7,6,5]
-   
-bfs(src, target)
+    if 0 <= x2 < 3 and 0 <= y2 < 3:
+        new_state = [row[:] for row in state]
+        new_state[x1][y1], new_state[x2][y2] = new_state[x2][y2], new_state[x1][y1]
+        return new_state
+    else:
+        return None
+def calculate_heuristic(state):
+    goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+    h = 0
+    for i in range(3):
+        for j in range(3):
+            if state[i][j] != goal_state[i][j] and state[i][j] != 0:
+                h += 1
+    return h
+def best_first_search(initial_state):
+    start_node = Node(initial_state, 0, calculate_heuristic(initial_state))
+    open_list = [start_node]
+    closed_set = set()
+    while open_list:
+        current_node = heapq.heappop(open_list)
+        if current_node.state == [[1, 2, 3], [4, 5, 6], [7, 8, 0]]:
+            return current_node
+        closed_set.add(tuple(map(tuple, current_node.state)))
+        for child in generate_child(current_node):
+            if tuple(map(tuple, child.state)) not in closed_set:
+                heapq.heappush(open_list, child)
+    return None
+initial_state = [[1, 2, 3], [0, 4, 6], [7, 5, 8]]
+solution_node = best_first_search(initial_state)
+if solution_node:
+    print("Solution found in", solution_node.level, "moves.")
+    print("Path:")
+    for row in solution_node.state:
+        print(row)
+else:
+    print("No solution found.")
