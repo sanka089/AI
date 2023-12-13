@@ -57,10 +57,6 @@ class Puzzle:
         print("\n\n")
         while True:
             cur = self.open[0]
-            print("")
-            print("  | ")
-            print("  | ")
-            print(" \\\'/ \n")
             for i in cur.data:
                 for j in i:
                     print(j, end=" ")
